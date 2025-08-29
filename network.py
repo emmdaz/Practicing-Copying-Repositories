@@ -162,6 +162,10 @@ class Network(object):
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
 
+
+    """
+    No le entendí tanto a este algoritmo pero prometo estudiarlo más D:
+    """
     def backprop(self, x, y):
         """
         Se genera una tupla de datos con los  gradientes de los bias y de los
