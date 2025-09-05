@@ -55,8 +55,8 @@ class Network(object):
         3 neuronas y otra con 4; y una capa de salida de 5 neuronas, se tiene
         entonces una lista con 3 arreglos de numpy, el primero con 15 valores
         generados, el segundo con 20 y el tercero con 4.     
-        """                      
-
+        """
+        
     def feedforward(self, a):
         """
         Esta es una función que será la función de activación del perceptrón
@@ -162,10 +162,11 @@ class Network(object):
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
 
-
+    
     """
     No le entendí tanto a este algoritmo pero prometo estudiarlo más D:
     """
+    
     def backprop(self, x, y):
         """
         Se genera una tupla de datos con los  gradientes de los bias y de los
@@ -189,10 +190,14 @@ class Network(object):
             activations.append(activation)
             
         # backward pass
-        delta = self.cost_derivative(activations[-1], y) * \
-            sigmoid_prime(zs[-1])
+    
+        delta = self.delta(y,activations[-1],zs[-1]) 
+        """
+        Se aplica la función de error para poder aplicarse al algoritmo de BP.
+        """
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
+        
         # Note that the variable l in the loop below is used a little
         # differently to the notation in Chapter 2 of the book.  Here,
         # l = 1 means the last layer of neurons, l = 2 is the
@@ -207,6 +212,38 @@ class Network(object):
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
         return (nabla_b, nabla_w)
 
+
+    """
+    Defínase a la nueva función de costo, en este caso, será la función de 
+    costo cross entropy.
+    """
+
+    def CEC(self,y,a):
+        return -1*np.sum(y*np.log(a)+(1-y)*np.log(1-a))
+    
+    """
+    Esta función de costo resulta útil pues sus salidas son siempre positivas, 
+    y funciona como función de costo pues si la activación es a y es muy cercana
+    a y, entonces se reducirá el valor de C y si es muy lejano, aumentará. 
+    Además, cumple con las dos asunciones necesarias en la función de costo 
+    para poder aplicar el algoritmo de BP: Que C puedas escribirse como un 
+    promedio y que C puede escribirse como una función dependiente de las 
+    salidas de la RN.
+    Resulta útil utilizar esta función de costo pues permite que el aprendizaje
+    de la RN sea más rápido, pues por el contrario de la función de costo 
+    cuadrática, el cambio en C no depende explícitamente de la derivada de la
+    función sigmoide. 
+    """
+    
+    """
+    Así mismo, defínase a la función de error "delta". Esta función resulta ser
+    la derivada de la función de costo respecto a una neurona j en la capa l. 
+    Puede pensarse en esta función como una medida del error en una neurona. 
+    """
+    
+    def delta(self,y,a,z):
+        return (a-y)*sigmoid_prime(z)
+    
     def evaluate(self, test_data):
         """
         Esta es una función para evaluar a la red neuronal, dando la cantidad 
@@ -221,7 +258,7 @@ class Network(object):
     def cost_derivative(self, output_activations, y):
         """
         Función que define elvector de derivadas parciales de la función de
-        costo C_x con respecto a "a" para las activaciones de salida. 
+        costo C_x con respecto a "a", las activaciones, para las activaciones de salida. 
         """
         return (output_activations-y)
 
