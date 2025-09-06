@@ -57,6 +57,18 @@ class Network(object):
         generados, el segundo con 20 y el tercero con 4.     
         """
         
+        self.v = [np.zeros((y, x)) for x, y in zip(self.sizes[:-1], 
+                                                   self.sizes[1:])]
+        """
+        Se genera una lista con las "velocidades" iniciales con las cuales se
+        buscará implementar después el algoritmo de Momentum para SGD. 
+        Dado que cada velocidad corresponde a cada uno de los valores de los 
+        pesos, es necesario que ambas listas tengan la misma forma. Por eso se
+        imita el procedimiento (al menos para configurar la forma de la lista
+        de los pesos iniciales) que se empleó un par de líneas de código atrás. 
+        """
+        
+        
     def feedforward(self, a):
         """
         Esta es una función que será la función de activación del perceptrón
@@ -70,7 +82,7 @@ class Network(object):
             a = sigmoid(np.dot(w, a)+b) 
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
+    def SGD(self, training_data, epochs, mini_batch_size, eta,mu,
             test_data=None):
         """
         Se crea una función que corresponderá al algoritmo de Stochastic 
@@ -90,7 +102,6 @@ class Network(object):
         se pretende mostrar el progreso partial que se tiene después de cada 
         una. 
         """
-
         training_data = list(training_data) # Definición de la lista con datos
                                             # de entrenamiento
         n = len(training_data) # Tamaño del conjunto de datos de entrenamiento
@@ -126,7 +137,7 @@ class Network(object):
                 for k in range(0, n, mini_batch_size)]
             
             for mini_batch in mini_batches: # Para cada mini batch
-                self.update_mini_batch(mini_batch, eta) # Se actualizan los
+                self.update_mini_batch(mini_batch, eta,mu) # Se actualizan los
                                                         # valores de los pesos
                                                         # y los bias acorde al 
                                                         # learning rate, usando
@@ -139,7 +150,7 @@ class Network(object):
                 # Se muestra que terminó el entrenamiento
                 print("Epoch {} complete".format(j))
 
-    def update_mini_batch(self, mini_batch, eta):
+    def update_mini_batch(self, mini_batch, eta, mu):
         """
         Se actualizan los pesos y bias de los mini batches después de aplicar
         SGD. Se genera una lista con valores para el gradiente de los bias y 
@@ -151,16 +162,42 @@ class Network(object):
         estos hagan que el valor de la función de costo vaya disminuyendo. 
         Aclarar también que "eta" corresponde al "learning rate". 
         """
+        self.mu=mu # Se configura el valor del "coeficiente de momento" con el
+                    # cual se trabajará. El valor empleado en este caso fue de
+                    # 0.9
+        
         nabla_b = [np.zeros(b.shape) for b in self.biases]
         nabla_w = [np.zeros(w.shape) for w in self.weights]
         for x, y in mini_batch:
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
+            
+        # self.weights = [w-(eta/len(mini_batch))*nw
+        #                 for w, nw in zip(self.weights, nabla_w)]
+        """
+        Se conservó el algoritmo para actualizar los valores de los bias.
+        """
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
+        """
+        Se modificó el algoritmo para actualizar los valores de los pesos.
+        Se hizo uso de un ciclo for de modo que se realizara una modificación en 
+        los valores de los pesos siguiendo el método de Momento para el SDG.
+        Para esto en el iniciador se configuró con anterioridad los valores de
+        velocidad, que deben de tener la misma forma y cantidad que las listas 
+        para los pesos. 
+        De este modo, se realizó un ciclo de tal modo que cada elemento de la
+        lista de velocidades fuera multiplicado por el factor de "coeficiente 
+        momento"", y cada elemento del cambio en la función de costo respecto a
+        los pesos fuera multiplicado por el factor de "fricción" "que en 
+        realidad corresponde al valor de la tasa de aprendizaje, eta.
+        Al sumar esto a cada uno de los valores de los pesos, esto sería luego
+        la actualización en su valor después de cada época.
+        """
+        for i, (w, nw, v) in enumerate(zip(self.weights, nabla_w, self.v)):
+            self.v[i] = self.mu * v - eta * nw
+            self.weights[i] += self.v[i]
 
     
     """
