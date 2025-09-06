@@ -6,10 +6,17 @@ import random
 # Third-party libraries
 import numpy as np
 
+class Optimizers(object):
+    
+    @staticmethod
+    def momentum(v,nw,coef,eta):
+        return coef*v-eta*nw
+
 class Network(object):
 
-    def __init__(self, sizes): # El self se utiliza ya que se está haciendo 
-                               # alusión al propio objeto que se está creando
+    def __init__(self, sizes,optimizer=Optimizers): # El self se utiliza ya que se 
+                                                # está haciendo alusión al
+                                                # propio objeto que se está creando
         """
         Tal como se mencionaba en el código original, con la función iniciadora
         __init__ se configura la red neuronal. 
@@ -57,6 +64,9 @@ class Network(object):
         generados, el segundo con 20 y el tercero con 4.     
         """
         
+        self.optimizer=Optimizers
+        
+        
     def feedforward(self, a):
         """
         Esta es una función que será la función de activación del perceptrón
@@ -70,7 +80,7 @@ class Network(object):
             a = sigmoid(np.dot(w, a)+b) 
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
+    def SGD(self, training_data, epochs, mini_batch_size, eta, coef,
             test_data=None):
         """
         Se crea una función que corresponderá al algoritmo de Stochastic 
@@ -126,7 +136,10 @@ class Network(object):
                 for k in range(0, n, mini_batch_size)]
             
             for mini_batch in mini_batches: # Para cada mini batch
-                self.update_mini_batch(mini_batch, eta) # Se actualizan los
+                # self.update_mini_batch(mini_batch, eta, coef,optimizer=self.optimizer)
+                self.update_mini_batch(mini_batch, eta, coef) 
+
+                                                        # Se actualizan los
                                                         # valores de los pesos
                                                         # y los bias acorde al 
                                                         # learning rate, usando
@@ -139,7 +152,9 @@ class Network(object):
                 # Se muestra que terminó el entrenamiento
                 print("Epoch {} complete".format(j))
 
-    def update_mini_batch(self, mini_batch, eta):
+    # def update_mini_batch(self, mini_batch,eta,coef,optimizer=self.optimizer):
+    def update_mini_batch(self, mini_batch,eta,coef):
+
         """
         Se actualizan los pesos y bias de los mini batches después de aplicar
         SGD. Se genera una lista con valores para el gradiente de los bias y 
@@ -157,12 +172,24 @@ class Network(object):
             delta_nabla_b, delta_nabla_w = self.backprop(x, y)
             nabla_b = [nb+dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
             nabla_w = [nw+dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
-        self.weights = [w-(eta/len(mini_batch))*nw
-                        for w, nw in zip(self.weights, nabla_w)]
-        self.biases = [b-(eta/len(mini_batch))*nb
-                       for b, nb in zip(self.biases, nabla_b)]
+        
+        # if optimizer:
+        #     v=[np.zeros(w.shape) for w in self.weights]
+        #     nv=[(self.optimizer).momentum(v,nw,coef,eta) 
+        #        for nw in nabla_w]
+        #     self.weights = [w+nv for w, nv in zip(self.weights, nv)]
+        
+        # else:
+        #     self.weights = [w-(eta/len(mini_batch))*nw
+        #                 for w, nw in zip(self.weights, nabla_w)]
+        #     self.biases = [b-(eta/len(mini_batch))*nb
+        #                for b, nb in zip(self.biases, nabla_b)]
 
-    
+        v=[np.zeros(w.shape) for w in self.weights]
+        nv=[(self.optimizer).momentum(v,nw,coef,eta) 
+           for nw in nabla_w]
+        self.weights = [w+nv for w, nv in zip(self.weights, nv)]
+        
     """
     No le entendí tanto a este algoritmo pero prometo estudiarlo más D:
     """
